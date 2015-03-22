@@ -5,7 +5,7 @@
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeSet;
 
 /**
@@ -15,54 +15,54 @@ import java.util.TreeSet;
 public class DecisionNode implements Comparable<DecisionNode> {
 	// Fields
 
-	private OthelloTile LastMove;
+	private OthelloTile lastMove;
 	public int id;
 	public int layerid;
-	public ArrayList<Integer> layerlengths;
+	public List<Integer> layerlengths;
 	public DecisionNode parent;
 	private DecisionNode root;
 	private int size = -1;
-	private OthelloGame board;
-	private LinkedList<DecisionNode> NextTurn;
+	private OthelloGame game;
+	private List<DecisionNode> nextTurn;
 	private TreeSet<DecisionNode> states;
-	private int LookAhead;
+	private int lookAhead;
 	private boolean forWhite;
-	protected int MoveQuality = 0;
+	protected int moveQuality = 0;
 
 	// Static method to build and use decision tree
 	public static OthelloTile getBestMove(OthelloGame board,
 			OthelloPlayer forPlayer) {
 		DecisionNode root = new DecisionNode(board, forPlayer, forPlayer
-				.getAIType().getLookAhead());
+				.getAIType().lookahead);
 		root.createDecisionTree();
 		root.pruneDecisionTree();
 		root.evaluateDecisionTree();
 		int best = Integer.MIN_VALUE;
 		// Return the best move, or one of the best moves at random if there are
 		// more than one of equal quality.
-		for (DecisionNode node : root.NextTurn)
-			if (node.MoveQuality > best)
-				best = node.MoveQuality;
+		for (DecisionNode node : root.nextTurn)
+			if (node.moveQuality > best)
+				best = node.moveQuality;
 		int i = 0;
-		while (i < root.NextTurn.size())
-			if (root.NextTurn.get(i).MoveQuality < best)
-				root.NextTurn.remove(i);
+		while (i < root.nextTurn.size())
+			if (root.nextTurn.get(i).moveQuality < best)
+				root.nextTurn.remove(i);
 			else
 				i++;
 		java.util.Random rnd = new java.util.Random();
-		i = rnd.nextInt(root.NextTurn.size());
-		OthelloTile ret = root.NextTurn.get(i).LastMove;
+		i = rnd.nextInt(root.nextTurn.size());
+		OthelloTile ret = root.nextTurn.get(i).lastMove;
 		root.destroy();
 		root = null;
 		return ret;
 	}
 
 	// Constructors
-	protected DecisionNode(OthelloGame _board) {
+	protected DecisionNode(OthelloGame _game) {
 		// Base constructor. Does nothing but copy the board and create the next
 		// layer of the tree.
-		this.board = _board.getCopy();
-		this.NextTurn = new LinkedList<DecisionNode>();
+		this.game = _game.getCopy();
+		this.nextTurn = new ArrayList<DecisionNode>();
 	}
 
 	public DecisionNode(OthelloGame _game, OthelloPlayer forPlayer,
@@ -71,7 +71,7 @@ public class DecisionNode implements Comparable<DecisionNode> {
 		this(_game);
 		this.root = this;
 		this.forWhite = forPlayer.isWhite;
-		this.LookAhead = lookahead;
+		this.lookAhead = lookahead;
 		this.states = new TreeSet<DecisionNode>();
 		layerlengths = new ArrayList<Integer>();
 		layerid = getNextLayerId(layer());
@@ -79,13 +79,13 @@ public class DecisionNode implements Comparable<DecisionNode> {
 
 	protected DecisionNode(DecisionNode laststate, OthelloTile move) {
 		// Create a child node
-		this(laststate.board);
+		this(laststate.game);
 		this.root = laststate.root;
 		this.parent = laststate;
 		this.forWhite = root.forWhite;
-		this.LastMove = move;
-		this.board.handleTilePlacement(move.x, move.y);
-		this.LookAhead = laststate.LookAhead - 1;
+		this.lastMove = move;
+		this.game.handleTilePlacement(move.x, move.y);
+		this.lookAhead = laststate.lookAhead - 1;
 		id = getNextId();
 		layerid = getNextLayerId(layer());
 	}
@@ -99,13 +99,13 @@ public class DecisionNode implements Comparable<DecisionNode> {
 		 * Bizarre little boolean equality tester found online, left here to see
 		 * if it makes a performance diff
 		 */
-		return this.board.getCurrentPlayer().isWhite ? root.board.getCurrentPlayer().isWhite
-				: !root.board.getCurrentPlayer().isWhite;
+		return this.game.getCurrentPlayer().isWhite ? root.game.getCurrentPlayer().isWhite
+				: !root.game.getCurrentPlayer().isWhite;
 	}
 
 	protected void destroy() {
-		for (DecisionNode node : NextTurn) {
-			if (node.NextTurn.size() == 0)
+		for (DecisionNode node : nextTurn) {
+			if (node.nextTurn.size() == 0)
 				node = null;
 			else
 				node.destroy();
@@ -113,7 +113,7 @@ public class DecisionNode implements Comparable<DecisionNode> {
 	}
 
 	protected int layer() {
-		return root.LookAhead - LookAhead;
+		return root.lookAhead - lookAhead;
 	}
 
 	protected int getNextId() {
@@ -131,16 +131,16 @@ public class DecisionNode implements Comparable<DecisionNode> {
 
 	private void createDecisionTree() {
 		// If this is an endpoint, do nothing
-		if (this.LookAhead == 0 || this.board.isOver())
+		if (this.lookAhead == 0 || this.game.isOver())
 			return;
 		// If not, create the next level in the tree
-		for (OthelloTile tile : this.board.board
-				.getLegalMoves(this.board.getCurrentPlayer().isWhite))
-			this.NextTurn.add(new DecisionNode(this, tile));
-		for (DecisionNode node : this.NextTurn)
+		for (OthelloTile tile : this.game.board
+				.getLegalMoves(this.game.getCurrentPlayer().isWhite))
+			this.nextTurn.add(new DecisionNode(this, tile));
+		for (DecisionNode node : this.nextTurn)
 			node.createDecisionTree();
 		// If the next move is the last one, add this to the list of endpoints
-		if (this.LookAhead == 1)
+		if (this.lookAhead == 1)
 			addFinalState(this);
 	}
 
@@ -151,17 +151,17 @@ public class DecisionNode implements Comparable<DecisionNode> {
 		 * good; prune all the other moves. Otherwise, prune the move that
 		 * resulted in the skip unless it's the only move left.
 		 */
-		Iterator<DecisionNode> i = NextTurn.iterator();
-		while (i.hasNext() && this.NextTurn.size() > 1) {
+		Iterator<DecisionNode> i = nextTurn.iterator();
+		while (i.hasNext() && this.nextTurn.size() > 1) {
 			DecisionNode node = i.next();
-			if (node.board.getCurrentPlayer().isWhite == this.board.getCurrentPlayer().isWhite)
+			if (node.game.getCurrentPlayer().isWhite == this.game.getCurrentPlayer().isWhite)
 				if (this.getIsMyTurn()) {
-					this.NextTurn.clear();
-					this.NextTurn.add(node);
+					this.nextTurn.clear();
+					this.nextTurn.add(node);
 				} else
-					this.NextTurn.remove(i);
+					this.nextTurn.remove(i);
 		}
-		for (DecisionNode node : this.NextTurn)
+		for (DecisionNode node : this.nextTurn)
 			node.pruneDecisionTree();
 	}
 
@@ -172,7 +172,7 @@ public class DecisionNode implements Comparable<DecisionNode> {
 		 * done.
 		 */
 		for (DecisionNode node : root.states)
-			node.MoveQuality = getAdvantage(node.board.board);
+			node.moveQuality = getAdvantage(node.game.board);
 		Iterator<DecisionNode> i = root.states.iterator();
 		while (i.hasNext()) {
 			DecisionNode node = i.next();
@@ -187,23 +187,23 @@ public class DecisionNode implements Comparable<DecisionNode> {
 	}
 
 	private void Maximize() {
-		if (this.NextTurn.size() == 0)
+		if (this.nextTurn.size() == 0)
 			return;
 		int bestvalue = Integer.MIN_VALUE;
-		for (DecisionNode node : this.NextTurn)
-			if (node.MoveQuality > bestvalue)
-				bestvalue = node.MoveQuality;
-		this.MoveQuality = bestvalue;
+		for (DecisionNode node : this.nextTurn)
+			if (node.moveQuality > bestvalue)
+				bestvalue = node.moveQuality;
+		this.moveQuality = bestvalue;
 	}
 
 	private void Minimize() {
-		if (this.NextTurn.size() == 0)
+		if (this.nextTurn.size() == 0)
 			return;
 		int bestvalue = Integer.MAX_VALUE;
-		for (DecisionNode node : this.NextTurn)
-			if (node.MoveQuality < bestvalue)
-				bestvalue = node.MoveQuality;
-		this.MoveQuality = bestvalue;
+		for (DecisionNode node : this.nextTurn)
+			if (node.moveQuality < bestvalue)
+				bestvalue = node.moveQuality;
+		this.moveQuality = bestvalue;
 	}
 
 	protected void addFinalState(DecisionNode node) {
@@ -246,7 +246,7 @@ public class DecisionNode implements Comparable<DecisionNode> {
 		 * having tiles that are currently not takeable
 		 */
 		ret = 0;
-		for (OthelloTile tile : board.board.ClaimedTiles) {
+		for (OthelloTile tile : game.board.ClaimedTiles) {
 			if (!tile.CanBeClaimedBy(!root.forWhite)
 					&& tile.color == root.forWhite)
 				ret += safevalue;
@@ -257,12 +257,12 @@ public class DecisionNode implements Comparable<DecisionNode> {
 		}
 		safevalue = ret;
 		ret = 0;
-		for(OthelloTile tile : board.board.Corners)
+		/*for(OthelloTile tile : game.board.Corners)
 			if (tile.isClaimed)
 				if (tile.color == root.forWhite)
 					ret += safetilesincorner(tile) * cornervalue;
 				else
-					ret -= safetilesincorner(tile) * cornervalue;	
+					ret -= safetilesincorner(tile) * cornervalue;	*/
 		cornerscore = ret;
 		return tilescore + safescore + cornerscore;
 	}
@@ -295,11 +295,11 @@ public class DecisionNode implements Comparable<DecisionNode> {
 				else
 					ymax = yval;
 				yval += ydir.ydiff;
-				toConsider = board.board.getTile(xval , yval);
+				toConsider = game.board.getTile(xval , yval);
 			} while (ymatch && ycount < ymax);
 			xval += xdir.xdiff;	
 			yval = tile.y;
-			toConsider = board.board.getTile(xval , yval);
+			toConsider = game.board.getTile(xval , yval);
 			xmatch = toConsider != null;
 			if (xmatch)
 				xmatch = toConsider.isClaimed && toConsider.color == tile.color;

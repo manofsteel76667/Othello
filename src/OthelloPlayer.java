@@ -38,14 +38,6 @@ public class OthelloPlayer {
 	public void setAIType(OthelloAIType AItype) {
 		this.aiType = AItype;
 	}
-
-	//public OthelloTileState getSide() {
-	//	return side;
-	//}
-
-	//public void setSide(OthelloTileState side) {
-	//	this.side = side;
-	//}
 	
 	public boolean isWhite;
 }

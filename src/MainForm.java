@@ -9,10 +9,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
+import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
 
 /**
@@ -25,6 +27,7 @@ public class MainForm extends javax.swing.JFrame implements
 	private static final long serialVersionUID = 1L;
 	final Label scoreLabel;
 	final Label playerLabel;
+	final Label moveLabel;
 	final OthelloCanvas canvas;
 	final OthelloMenu menu;
 	final OthelloGame game;
@@ -39,7 +42,10 @@ public class MainForm extends javax.swing.JFrame implements
 		this.setLayout(new FlowLayout());
 		scoreLabel = new Label();
 		playerLabel = new Label();
+		moveLabel = new Label();
 		canvas = new OthelloCanvas(game);
+		JPanel left = new JPanel();
+		left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
 		game.addGameEventListener(canvas);
 		game.addGameEventListener(this);
 		game.setWhitePlayer(new OthelloPlayer("White", OthelloAIType.Human,
@@ -49,8 +55,10 @@ public class MainForm extends javax.swing.JFrame implements
 		menu = new OthelloMenu(this);
 		this.setJMenuBar(menu);
 		game.startNewGame();
-		add(scoreLabel);
-		add(playerLabel);
+		left.add(playerLabel);
+		left.add(scoreLabel);
+		left.add(moveLabel);
+		add(left);
 		add(canvas);
 		pack();
 		this.setDefaultCloseOperation(HIDE_ON_CLOSE);
@@ -67,6 +75,8 @@ public class MainForm extends javax.swing.JFrame implements
 				game.getBoard().getPlayerScore(game.getBlackPlayer().isWhite)));
 		playerLabel.setText(game.isOver() ? "Game Over" : 
 			String.format("%s's turn", game.getCurrentPlayer().getName()));
+		Move m = game.getLastMove();
+		moveLabel.setText(m == null ? "No moves made." : m.toString());
 	}
 
 	public void handleTileClick(Object source, OthelloTile tile) {

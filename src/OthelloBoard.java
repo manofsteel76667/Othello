@@ -187,7 +187,6 @@ public class OthelloBoard {
 				ClaimedTiles.add(t);
 				blacktiles++;
 			}
-		}
-			
+		}			
 	}
 }

@@ -45,7 +45,7 @@ public class OthelloCanvas extends Canvas implements OthelloGameEventListener {
 
 	@Override
 	public void paint(Graphics g) {
-		if (myBoard == null)
+		if (myBoard == null || g == null)
 			return;
 		Graphics2D offscreengraphic = (Graphics2D) offscreenimage.getGraphics();
 		for (OthelloTile tile : myBoard.AllTiles) {
@@ -103,6 +103,6 @@ public class OthelloCanvas extends Canvas implements OthelloGameEventListener {
 		offscreenimage = new java.awt.image.BufferedImage(dim.width,
 				dim.height, BufferedImage.TYPE_INT_ARGB);
 		setPreferredSize(dim);
-		this.repaint();
+		this.paint(this.getGraphics());
 	}
 }

@@ -94,4 +94,7 @@ public final class OthelloTile {
 		else
 			return color ? 2 : 1;
 	}
+	public String toString() {
+		return String.format("(%d,%d)", x, y);
+	}
 }
