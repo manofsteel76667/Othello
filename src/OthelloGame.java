@@ -2,40 +2,69 @@ import java.util.ArrayList;
 import java.util.List;
 
 class Move {
+	/**
+	 * Used for Undo function and MiniMax calculation
+	 */
+	public Move previousMove;
+	/**
+	 * Used for redo, useless in MiniMax
+	 */
+	public Move nextMove;
 	public OthelloPlayer player;
+	/**
+	 * Tile that was place on this move
+	 */
 	public OthelloTile tile;
-	public String result;
+	/**
+	 * State of the board AFTER the move was made. Check lastMove.finalState for
+	 * initial board state. State is stored as a serialized board.
+	 */
+	public String finalState;
+	/**
+	 * Turn on which the move was made
+	 */
 	public int turn;
+	public int moveQuality = 0;
 
-	public Move(OthelloPlayer player, OthelloTile tile, OthelloBoard board,
-			int turn) {
+	public Move(Move previousMove, OthelloPlayer player, OthelloTile tile,
+			String boardState, int turn) {
 		this.player = player;
 		this.tile = tile;
 		this.turn = turn;
-		result = board.serialize();
+		this.previousMove = previousMove;
+		finalState = boardState;
+		nextMove = null;
 	}
 
 	public String toString() {
-		return String.format("Turn %d: %s played tile %s", turn,
-				player.getName(), tile.toString());
+		if (turn == 0)
+			return "No tiles playet.";
+		else
+			return String.format("Turn %d: %s played tile %s", turn,
+					player.getName(), tile.toString());
 	}
 }
 
 public class OthelloGame implements OthelloGameEventSource {
+
+	public List<Move> moves;
+	public int turn;
+
+	List<OthelloGameEventListener> eventListeners;
+	Move previousMove;
+	Move nextMove;
+	OthelloBoard board;
+	OthelloPlayer whitePlayer;
+	OthelloPlayer blackPlayer;
+	OthelloPlayer currentPlayer;
+
 	public OthelloGame() {
 		board = new OthelloBoard(8, 8);
 		eventListeners = new ArrayList<OthelloGameEventListener>();
 		moves = new ArrayList<Move>();
+		previousMove = new Move(null, currentPlayer, null, board.serialize(), 0);
+		nextMove = null;
 	}
-
-	List<OthelloGameEventListener> eventListeners;
-	public List<Move> moves;
-	Move lastMove;
-	public int turn;
-	OthelloBoard board;
-	OthelloPlayer whitePlayer;
-	OthelloPlayer blackPlayer;
-	private OthelloPlayer currentPlayer;
 
 	public OthelloBoard getBoard() {
 		return board;
@@ -66,6 +95,8 @@ public class OthelloGame implements OthelloGameEventSource {
 		currentPlayer = whitePlayer;
 		notifyListeners();
 		turn = 1;
+		moves.clear();
+		previousMove = new Move(null, currentPlayer, null, board.serialize(), 0);
 	}
 
 	public boolean isOver() {
@@ -82,10 +113,48 @@ public class OthelloGame implements OthelloGameEventSource {
 	}
 
 	void logMove(int x, int y) {
-		Move m = new Move(currentPlayer, board.getTile(x, y), board, turn);
+		Move m = new Move(previousMove, currentPlayer, board.getTile(x, y),
+				board.serialize(), turn);
+		while (moves.size() >= turn)
+			moves.remove(moves.size() - 1);
 		moves.add(m);
 		turn++;
-		lastMove = m;
+		previousMove.nextMove = m;
+		previousMove = m;
+	}
+
+	/**
+	 * Resets game state to the turn following the given move
+	 * 
+	 * @param move
+	 */
+	public void setToMove(Move move) {
+		if (move.turn > 0) {
+			currentPlayer = move.player;
+			turn = move.turn;
+			board.overwriteFromString(move.previousMove.finalState);
+			previousMove = move.previousMove;
+		}
+	}
+
+	public void undoMove() {
+		if (turn > 1) {
+			setToMove(previousMove);
+			notifyListeners();
+		}
+	}
+
+	public void redoMove() {
+		if (previousMove.nextMove != null){
+				Move move = previousMove.nextMove;
+				if (board.getLegalMoves(!move.player.isWhite).size() > 0)
+					currentPlayer = move.player == whitePlayer ? blackPlayer
+							: whitePlayer;
+				turn = move.turn + 1;
+				board.overwriteFromString(move.finalState);
+				previousMove = move;
+				notifyListeners();
+			}
 	}
 
 	private void handleEndOfTurn() {
@@ -102,9 +171,8 @@ public class OthelloGame implements OthelloGameEventSource {
 	private void handleAITurn() {
 		long minTime = System.currentTimeMillis() + 1000;
 		OthelloTile tile = currentPlayer.getNextMove(this);
-		// TODO: log something if the AI comes up with an illegal move?
 		if (!board.MakeMove(tile.x, tile.y, currentPlayer.isWhite))
-			board.toString();
+			throw new RuntimeException("AI came up with an illegal move!");
 		logMove(tile.x, tile.y);
 		while (System.currentTimeMillis() < minTime)
 			try {
@@ -128,7 +196,7 @@ public class OthelloGame implements OthelloGameEventSource {
 	}
 
 	public Move getLastMove() {
-		return lastMove;
+		return previousMove;
 	}
 
 	@Override

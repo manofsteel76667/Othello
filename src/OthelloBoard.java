@@ -158,7 +158,7 @@ public class OthelloBoard {
 	public String serialize() {
 		StringBuilder sb = new StringBuilder();
 		for(OthelloTile t : AllTiles)
-			sb.append(t.isClaimed ? "U" : t.color ? "W" : "B");
+			sb.append(!t.isClaimed ? "U" : t.color ? "W" : "B");
 		return sb.toString();
 	}
 	

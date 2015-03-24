@@ -68,13 +68,13 @@ public class MainForm extends javax.swing.JFrame implements
 
 	public void updateScreenData() {
 		String scoreFormat = "%s Score: %s: %d / %s: %d";
-		scoreLabel.setText(String.format(scoreFormat, game.isOver() ? "Final" : "Current",
-				game.getWhitePlayer().getName(),
-				game.getBoard().getPlayerScore(game.getWhitePlayer().isWhite),
-				game.getBlackPlayer().getName(),
+		scoreLabel.setText(String.format(scoreFormat, game.isOver() ? "Final"
+				: "Current", game.getWhitePlayer().getName(), game.getBoard()
+				.getPlayerScore(game.getWhitePlayer().isWhite), game
+				.getBlackPlayer().getName(),
 				game.getBoard().getPlayerScore(game.getBlackPlayer().isWhite)));
-		playerLabel.setText(game.isOver() ? "Game Over" : 
-			String.format("%s's turn", game.getCurrentPlayer().getName()));
+		playerLabel.setText(game.isOver() ? "Game Over" : String.format(
+				"%s's turn", game.getCurrentPlayer().getName()));
 		Move m = game.getLastMove();
 		moveLabel.setText(m == null ? "No moves made." : m.toString());
 	}
@@ -95,15 +95,15 @@ class OthelloMenu extends JMenuBar {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	JMenu gamemenu, player1, player2;
-	JMenuItem newgame;
+	JMenu gameMenu, player1, player2;
+	JMenuItem newgame, undoButton, redoButton;
 	ButtonGroup player1ai, player2ai;
 
 	public OthelloMenu(final MainForm owner) {
-		gamemenu = new JMenu("Game");
-		gamemenu.setMnemonic(KeyEvent.VK_A);
-		gamemenu.getAccessibleContext().setAccessibleDescription("Main Menu");
-		this.add(gamemenu);
+		gameMenu = new JMenu("Game");
+		gameMenu.setMnemonic(KeyEvent.VK_A);
+		gameMenu.getAccessibleContext().setAccessibleDescription("Main Menu");
+		this.add(gameMenu);
 		newgame = new JMenuItem("New Game");
 		newgame.setMnemonic(KeyEvent.VK_N);
 		newgame.getAccessibleContext().setAccessibleDescription(
@@ -117,7 +117,7 @@ class OthelloMenu extends JMenuBar {
 			}
 
 		});
-		gamemenu.add(newgame);
+		gameMenu.add(newgame);
 		player1 = new JMenu("Player 1");
 		player2 = new JMenu("Player 2");
 		player1ai = new ButtonGroup();
@@ -154,7 +154,33 @@ class OthelloMenu extends JMenuBar {
 				player2.addSeparator();
 			}
 		}
-		gamemenu.add(player1);
-		gamemenu.add(player2);
+		gameMenu.add(player1);
+		gameMenu.add(player2);
+		undoButton = new JMenuItem("Undo Move");
+		undoButton.setMnemonic(KeyEvent.VK_Z);
+		undoButton.getAccessibleContext().setAccessibleDescription(
+				"Undo the previous move");
+		undoButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				owner.game.undoMove();
+			}
+
+		});
+		gameMenu.add(undoButton);
+		redoButton = new JMenuItem("Redo Move");
+		redoButton.setMnemonic(KeyEvent.VK_Y);
+		redoButton.getAccessibleContext().setAccessibleDescription(
+				"Redo the previous move");
+		redoButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				owner.game.redoMove();
+			}
+
+		});
+		gameMenu.add(redoButton);
 	}
 }
